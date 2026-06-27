@@ -113,12 +113,33 @@
   .btn-primary:disabled{opacity:.6;cursor:default}
 
   /* Report */
-  .report-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .report-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px}
   .report-head h3{margin:0}
+  .report-head-btns{display:flex;gap:6px}
   .btn-refresh{
     border:1.5px solid var(--line);background:#fff;color:var(--primary);padding:7px 12px;
     border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
   }
+  .btn-export{
+    border:1.5px solid var(--primary);background:var(--primary-light);color:var(--primary);padding:7px 12px;
+    border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+  }
+
+  /* Danger zone */
+  .danger-zone{margin-top:30px;padding-top:18px;border-top:2px dashed var(--line)}
+  .btn-danger-zone{
+    width:100%;padding:13px;background:#fff;color:var(--danger);border:1.5px solid var(--danger);
+    border-radius:11px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
+  .danger-warning{
+    background:#fdeaea;color:var(--danger);border-radius:12px;padding:14px;font-size:13.5px;
+    font-weight:600;margin-bottom:16px;line-height:1.5;
+  }
+  .btn-danger-confirm{
+    flex:1;padding:12px;background:var(--danger);color:#fff;border:none;border-radius:11px;
+    font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
+  .btn-danger-confirm:disabled{opacity:.45;cursor:not-allowed}
   .muted{color:var(--muted);font-size:14px;text-align:center;padding:14px 0}
   .trow{display:flex;align-items:flex-start;gap:10px;padding:13px 0;border-bottom:1px solid var(--line)}
   .trow:last-child{border-bottom:none}
@@ -294,12 +315,19 @@
       <div class="card">
         <div class="report-head">
           <h3>Semua Pesanan</h3>
-          <button class="btn-refresh" onclick="renderReport()">↻ Muat Ulang</button>
+          <div class="report-head-btns">
+            <button class="btn-export" onclick="exportPDF()">📄 Export PDF</button>
+            <button class="btn-refresh" onclick="renderReport()">↻ Muat Ulang</button>
+          </div>
         </div>
         <div id="reportBody"><div class="muted">Memuat…</div></div>
         <div class="total-row">
           <span>Total Keseluruhan</span>
           <span id="reportTotal">Rp 0</span>
+        </div>
+
+        <div class="danger-zone">
+          <button class="btn-danger-zone" onclick="openDangerModal()">⚠️ Hapus Semua Data</button>
         </div>
       </div>
     </section>
@@ -393,9 +421,28 @@
     </div>
   </div>
 
+  <!-- Hapus Semua Data Modal -->
+  <div id="dangerOverlay" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-title">Hapus Semua Data</div>
+      <div class="danger-warning">
+        ⚠️ Semua data pesanan akan dihapus PERMANEN dan tidak bisa dikembalikan.
+      </div>
+      <label for="dangerConfirmInput">Ketik <strong>HAPUS</strong> untuk konfirmasi</label>
+      <input type="text" id="dangerConfirmInput" placeholder="Ketik HAPUS" autocomplete="off">
+
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeDangerModal()">Batal</button>
+        <button class="btn-danger-confirm" id="btnDangerConfirm" disabled onclick="deleteAllData()">Hapus Permanen</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Firebase SDK (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
   <script>
   /* ===== 1. ISI KONFIG FIREBASE KAMU DI SINI ===== */
@@ -731,6 +778,82 @@
       .catch(function(err){
         console.error("❌ Update error:", err.code, err.message);
         toast('Gagal simpan: ' + err.message);
+      });
+  }
+
+  // --- Export PDF ---
+  function exportPDF(){
+    if (ordersCache.length === 0){ toast('Belum ada data untuk diexport.'); return; }
+    if (!window.jspdf){ toast('Library PDF gagal dimuat.'); return; }
+
+    var rows = [];
+    var sorted = ordersCache.slice().sort(function(a,b){ return (b.data.waktu||0) - (a.data.waktu||0); });
+    var grandTotal = 0, no = 1;
+    sorted.forEach(function(entry){
+      var o = entry.data;
+      grandTotal += Number(o.total) || 0;
+      o.items.forEach(function(it){
+        rows.push([ no++, o.nama, it.jenis, it.pelengkap || '-', rupiah(it.subtotal), formatTime(o.waktu) ]);
+      });
+    });
+
+    var doc = new window.jspdf.jsPDF();
+    var today = new Date();
+    var tanggalStr = today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
+
+    doc.setFontSize(14);
+    doc.text('Laporan Pesanan Cilok Mbak Nurul', 14, 16);
+    doc.setFontSize(10);
+    doc.setTextColor(120);
+    doc.text('Tanggal export: ' + formatTime(today.getTime()), 14, 22);
+
+    doc.autoTable({
+      startY: 28,
+      head: [['No', 'Nama', 'Jenis', 'Pelengkap', 'Harga', 'Waktu']],
+      body: rows,
+      foot: [['', '', '', '', 'TOTAL', rupiah(grandTotal)]],
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [10, 77, 140] },
+      footStyles: { fillColor: [232, 241, 251], textColor: [7, 55, 99], fontStyle: 'bold' }
+    });
+
+    doc.save('laporan-cilok-' + tanggalStr + '.pdf');
+  }
+
+  // --- Hapus Semua Data ---
+  document.getElementById('dangerConfirmInput').addEventListener('input', function(){
+    document.getElementById('btnDangerConfirm').disabled = (this.value !== 'HAPUS');
+  });
+
+  function openDangerModal(){
+    document.getElementById('dangerConfirmInput').value = '';
+    document.getElementById('btnDangerConfirm').disabled = true;
+    document.getElementById('dangerOverlay').classList.add('show');
+  }
+
+  function closeDangerModal(){
+    document.getElementById('dangerOverlay').classList.remove('show');
+    document.getElementById('dangerConfirmInput').value = '';
+  }
+
+  function deleteAllData(){
+    if (document.getElementById('dangerConfirmInput').value !== 'HAPUS') return;
+    var btn = document.getElementById('btnDangerConfirm');
+    btn.disabled = true; btn.textContent = 'Menghapus…';
+
+    pesananRef.remove()
+      .then(function(){
+        console.log("✓ All data removed");
+        closeDangerModal();
+        toast('Semua data berhasil dihapus.');
+      })
+      .catch(function(err){
+        console.error("❌ Remove all error:", err.code, err.message);
+        toast('Gagal hapus: ' + err.message);
+      })
+      .finally(function(){
+        btn.textContent = 'Hapus Permanen';
+        btn.disabled = (document.getElementById('dangerConfirmInput').value !== 'HAPUS');
       });
   }
 
