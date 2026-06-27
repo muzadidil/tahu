@@ -71,10 +71,10 @@
   /* Checklist */
   .checks{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
   .chk{
-    display:flex;align-items:center;gap:8px;margin:0;font-weight:500;padding:11px 12px;
-    border:1.5px solid var(--line);border-radius:10px;cursor:pointer;font-size:14px;transition:.15s;
+    display:flex;align-items:center;gap:6px;margin:0;font-weight:500;padding:8px 9px;
+    border:1.5px solid var(--line);border-radius:9px;cursor:pointer;font-size:12.5px;transition:.15s;
   }
-  .chk input{width:18px;height:18px;accent-color:var(--primary);cursor:pointer}
+  .chk input{width:15px;height:15px;accent-color:var(--primary);cursor:pointer}
   .chk.on{border-color:var(--primary);background:var(--primary-light)}
 
   .cond{margin-top:10px;padding:12px;background:var(--primary-light);border-radius:10px}
@@ -274,7 +274,9 @@
           <label class="chk"><input type="checkbox" class="pl" value="Saos"> Saos</label>
           <label class="chk"><input type="checkbox" class="pl" value="Kecap"> Kecap</label>
           <label class="chk"><input type="checkbox" class="pl" id="cSambal" value="Sambal"> Sambal</label>
-          <label class="chk"><input type="checkbox" class="pl" id="cKuah" value="Kuah"> Kuah</label>
+          <label class="chk"><input type="checkbox" class="pl" id="cKuah" value="Kuah" checked> Kuah</label>
+          <label class="chk"><input type="checkbox" class="pl" value="Seledri"> Seledri</label>
+          <label class="chk"><input type="checkbox" class="pl" value="Daun Bawang"> Daun Bawang</label>
         </div>
 
         <div id="sambalWrap" class="cond hidden">
@@ -288,7 +290,7 @@
           </select>
         </div>
 
-        <div id="kuahWrap" class="cond hidden">
+        <div id="kuahWrap" class="cond">
           <label for="kuahJml">Banyak Kuah</label>
           <select id="kuahJml">
             <option value="Banyak">Banyak</option>
@@ -384,7 +386,9 @@
           <label class="chk"><input type="checkbox" class="epl" value="Saos"> Saos</label>
           <label class="chk"><input type="checkbox" class="epl" value="Kecap"> Kecap</label>
           <label class="chk"><input type="checkbox" class="epl" id="eCSambal" value="Sambal"> Sambal</label>
-          <label class="chk"><input type="checkbox" class="epl" id="eCKuah" value="Kuah"> Kuah</label>
+          <label class="chk"><input type="checkbox" class="epl" id="eCKuah" value="Kuah" checked> Kuah</label>
+          <label class="chk"><input type="checkbox" class="epl" value="Seledri"> Seledri</label>
+          <label class="chk"><input type="checkbox" class="epl" value="Daun Bawang"> Daun Bawang</label>
         </div>
 
         <div id="eSambalWrap" class="cond hidden">
@@ -398,7 +402,7 @@
           </select>
         </div>
 
-        <div id="eKuahWrap" class="cond hidden">
+        <div id="eKuahWrap" class="cond">
           <label for="eKuahJml">Banyak Kuah</label>
           <select id="eKuahJml">
             <option value="Banyak">Banyak</option>
@@ -486,8 +490,10 @@
   document.getElementById('cSambal').addEventListener('change', function(){
     document.getElementById('sambalWrap').classList.toggle('hidden', !this.checked);
   });
-  document.getElementById('cKuah').addEventListener('change', function(){
-    document.getElementById('kuahWrap').classList.toggle('hidden', !this.checked);
+  document.getElementById('cKuah').closest('.chk').classList.add('on');
+  document.getElementById('cKuah').addEventListener('click', function(e){
+    e.preventDefault();
+    this.checked = true;
   });
 
   // --- Edit modal: checklist visual + conditional dropdowns ---
@@ -499,8 +505,10 @@
   document.getElementById('eCSambal').addEventListener('change', function(){
     document.getElementById('eSambalWrap').classList.toggle('hidden', !this.checked);
   });
-  document.getElementById('eCKuah').addEventListener('change', function(){
-    document.getElementById('eKuahWrap').classList.toggle('hidden', !this.checked);
+  document.getElementById('eCKuah').closest('.chk').classList.add('on');
+  document.getElementById('eCKuah').addEventListener('click', function(e){
+    e.preventDefault();
+    this.checked = true;
   });
 
   function rupiah(n){ return 'Rp ' + (Number(n)||0).toLocaleString('id-ID'); }
@@ -534,9 +542,12 @@
   function resetItemForm(){
     document.getElementById('jenis').value = 'Tahu Pentol';
     document.getElementById('harga').value = '';
-    document.querySelectorAll('.pl').forEach(function(c){ c.checked=false; c.closest('.chk').classList.remove('on'); });
+    document.querySelectorAll('.pl').forEach(function(c){
+      var isKuah = (c.id === 'cKuah');
+      c.checked = isKuah;
+      c.closest('.chk').classList.toggle('on', isKuah);
+    });
     document.getElementById('sambalWrap').classList.add('hidden');
-    document.getElementById('kuahWrap').classList.add('hidden');
   }
 
   function removeItem(i){ cart.splice(i,1); renderCart(); }
@@ -716,9 +727,12 @@
   function resetEditItemForm(){
     document.getElementById('editJenis').value = 'Tahu Pentol';
     document.getElementById('editHarga').value = '';
-    document.querySelectorAll('.epl').forEach(function(c){ c.checked=false; c.closest('.chk').classList.remove('on'); });
+    document.querySelectorAll('.epl').forEach(function(c){
+      var isKuah = (c.id === 'eCKuah');
+      c.checked = isKuah;
+      c.closest('.chk').classList.toggle('on', isKuah);
+    });
     document.getElementById('eSambalWrap').classList.add('hidden');
-    document.getElementById('eKuahWrap').classList.add('hidden');
   }
 
   function addEditItem(){
