@@ -1,0 +1,55 @@
+PROMPT UNTUK CLAUDE CODE VS CODE — DEBUG FIREBASE FORM CILOK
+
+---
+
+KONTEKS:
+- File: index.html (GitHub Pages form titip cilok)
+- Problem: Button "Mengirim..." stuck, data tidak tersimpan ke Firebase
+- Database: Firebase Realtime DB project "tahu-pentol"
+- Config: sudah ada di index.html
+
+LANGKAH KERJA:
+
+1. GIT CLONE (di Terminal VS Code):
+   git clone https://github.com/muzadidil/tahu.git
+   cd tahu
+
+2. BUKA FOLDER di VS Code
+
+3. DOWNLOAD index.html dari output sini (sudah ada debug log-nya)
+   → Replace ke folder tahu
+
+4. GIT COMMIT:
+   git add index.html
+   git commit -m "add debug logs for firebase"
+   git push
+
+5. TUNGGU 2 MENIT
+
+6. BUKA FORM LAGI:
+   https://muzadidil.github.io/tahu/
+
+7. BUKA CHROME DEVTOOLS (F12) → Console tab
+   → Isi nama, tambah item, submit
+   → Lihat console log yang keluar
+
+8. SCREENSHOT error message (kalau ada) — kirim ke saya
+
+---
+
+EXPECTED LOG OUTPUT (kalau lancar):
+✓ Firebase init OK
+📤 Submitting order: { nama: "...", total: ..., items: [...] }
+📊 Data dari Firebase: { ... }
+✓ Order saved to Firebase!
+
+Kalau ada ❌ ERROR — screenshot untuk diagnosis.
+
+---
+
+JANGAN:
+- Ubah login Firebase atau rules
+- Hapus debug log sebelum clear issue
+- Upload tanpa git commit
+
+GO!
