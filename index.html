@@ -298,6 +298,12 @@
           </select>
         </div>
 
+        <label for="sakesam">SAKESAM</label>
+        <select id="sakesam">
+          <option value="Di Campur" selected>Di Campur</option>
+          <option value="Dipisah">Dipisah</option>
+        </select>
+
         <button class="btn-add" onclick="addItem()">+ Tambah ke Pesanan</button>
       </div>
 
@@ -409,6 +415,12 @@
             <option value="Sedikit">Sedikit</option>
           </select>
         </div>
+
+        <label for="eSakesam">SAKESAM</label>
+        <select id="eSakesam">
+          <option value="Di Campur" selected>Di Campur</option>
+          <option value="Dipisah">Dipisah</option>
+        </select>
 
         <button class="btn-add" onclick="addEditItem()">+ Tambah Item Baru</button>
       </div>
@@ -533,10 +545,15 @@
       pel.push(label);
     });
 
-    cart.push({ jenis:jenis, harga:Number(harga), pelengkap:pel.join(', '), subtotal:Number(harga) });
+    var sakesam = document.getElementById('sakesam').value;
+    cart.push({ jenis:jenis, harga:Number(harga), pelengkap:pel.join(', '), sakesam:sakesam, subtotal:Number(harga) });
     renderCart();
     resetItemForm();
     toast('Item ditambahkan.');
+  }
+
+  function pelengkapDisplay(it){
+    return it.pelengkap ? (it.pelengkap + (it.sakesam ? ' · ' + it.sakesam : '')) : (it.sakesam || '');
   }
 
   function resetItemForm(){
@@ -548,6 +565,7 @@
       c.closest('.chk').classList.toggle('on', isKuah);
     });
     document.getElementById('sambalWrap').classList.add('hidden');
+    document.getElementById('sakesam').value = 'Di Campur';
   }
 
   function removeItem(i){ cart.splice(i,1); renderCart(); }
@@ -564,10 +582,11 @@
     var html = '', total = 0;
     cart.forEach(function(it,i){
       total += it.subtotal;
+      var pelDisp = pelengkapDisplay(it);
       html += '<div class="line">'
         +   '<div class="line-info">'
         +     '<div class="line-title">'+it.jenis+'</div>'
-        +     (it.pelengkap ? '<div class="line-sub">'+it.pelengkap+'</div>' : '')
+        +     (pelDisp ? '<div class="line-sub">'+pelDisp+'</div>' : '')
         +   '</div>'
         +   '<div class="line-price">'+rupiah(it.subtotal)+'</div>'
         +   '<button class="line-del" onclick="removeItem('+i+')">✕</button>'
@@ -664,8 +683,9 @@
 
       var itemsHtml = '';
       o.items.forEach(function(it){
+        var pelDisp = pelengkapDisplay(it);
         itemsHtml += '<div class="ocard-item-row">'
-          +   '<span>'+it.jenis+(it.pelengkap ? ' <span class="it-sub">('+it.pelengkap+')</span>' : '')+'</span>'
+          +   '<span>'+it.jenis+(pelDisp ? ' <span class="it-sub">('+pelDisp+')</span>' : '')+'</span>'
           +   '<span>'+rupiah(it.subtotal)+'</span>'
           + '</div>';
       });
@@ -733,6 +753,7 @@
       c.closest('.chk').classList.toggle('on', isKuah);
     });
     document.getElementById('eSambalWrap').classList.add('hidden');
+    document.getElementById('eSakesam').value = 'Di Campur';
   }
 
   function addEditItem(){
@@ -748,7 +769,8 @@
       pel.push(label);
     });
 
-    editCart.push({ jenis:jenis, harga:Number(harga), pelengkap:pel.join(', '), subtotal:Number(harga) });
+    var sakesam = document.getElementById('eSakesam').value;
+    editCart.push({ jenis:jenis, harga:Number(harga), pelengkap:pel.join(', '), sakesam:sakesam, subtotal:Number(harga) });
     renderEditCart();
     resetEditItemForm();
   }
@@ -762,10 +784,11 @@
     } else {
       var html = '';
       editCart.forEach(function(it,i){
+        var pelDisp = pelengkapDisplay(it);
         html += '<div class="edit-line">'
           +   '<div class="line-info">'
           +     '<div class="line-title">'+it.jenis+'</div>'
-          +     (it.pelengkap ? '<div class="line-sub">'+it.pelengkap+'</div>' : '')
+          +     (pelDisp ? '<div class="line-sub">'+pelDisp+'</div>' : '')
           +   '</div>'
           +   '<div class="line-price">'+rupiah(it.subtotal)+'</div>'
           +   '<button class="line-del" onclick="removeEditItem('+i+')">✕</button>'
@@ -807,7 +830,7 @@
       var o = entry.data;
       grandTotal += Number(o.total) || 0;
       o.items.forEach(function(it){
-        rows.push([ no++, o.nama, it.jenis, it.pelengkap || '-', rupiah(it.subtotal), formatTime(o.waktu) ]);
+        rows.push([ no++, o.nama, it.jenis, pelengkapDisplay(it) || '-', rupiah(it.subtotal), formatTime(o.waktu) ]);
       });
     });
 
