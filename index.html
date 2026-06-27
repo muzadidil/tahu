@@ -136,6 +136,74 @@
     box-shadow:0 6px 20px rgba(0,0,0,.2);z-index:99;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* Modal overlay (success + edit) */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(13,28,48,.55);display:none;
+    align-items:center;justify-content:center;z-index:200;padding:20px;
+  }
+  .modal-overlay.show{display:flex}
+  .modal-card{
+    background:var(--card);border-radius:18px;padding:26px 22px;max-width:380px;width:100%;
+    box-shadow:0 16px 40px rgba(7,55,99,.3);transform:scale(.85);opacity:0;
+    transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s;
+    max-height:86vh;overflow-y:auto;
+  }
+  .modal-overlay.show .modal-card{transform:scale(1);opacity:1}
+
+  /* Success modal */
+  .success-icon{width:64px;height:64px;margin:0 auto 14px;display:block}
+  .success-icon circle{
+    fill:none;stroke:#2fae5b;stroke-width:4;stroke-dasharray:166;stroke-dashoffset:166;
+    animation:circleIn .5s ease forwards;
+  }
+  .success-icon path{
+    fill:none;stroke:#2fae5b;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;
+    stroke-dasharray:48;stroke-dashoffset:48;animation:checkIn .35s ease forwards .4s;
+  }
+  @keyframes circleIn{to{stroke-dashoffset:0}}
+  @keyframes checkIn{to{stroke-dashoffset:0}}
+  .success-title{text-align:center;font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px}
+  .success-sub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:16px}
+  .success-summary{background:var(--primary-light);border-radius:12px;padding:14px;margin-bottom:18px}
+  .success-row{display:flex;justify-content:space-between;font-size:13.5px;padding:4px 0}
+  .success-row span:first-child{color:var(--muted)}
+  .success-row span:last-child{font-weight:700;color:var(--primary-dark)}
+  .btn-modal-close{
+    width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:11px;
+    font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
+
+  /* Edit modal */
+  .modal-title{font-size:16px;font-weight:700;color:var(--primary-dark);margin-bottom:14px}
+  .edit-line{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}
+  .edit-line:last-of-type{border-bottom:none}
+  .modal-actions{display:flex;gap:10px;margin-top:18px}
+  .btn-cancel{
+    flex:1;padding:12px;background:#fff;color:var(--text);border:1.5px solid var(--line);
+    border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
+  .btn-save{
+    flex:1;padding:12px;background:var(--primary);color:#fff;border:none;
+    border-radius:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
+
+  /* Report card (per order) */
+  .ocard{padding:14px 0;border-bottom:1px solid var(--line)}
+  .ocard:last-child{border-bottom:none}
+  .ocard-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .ocard-actions{display:flex;gap:6px;flex-shrink:0}
+  .icon-btn{
+    width:30px;height:30px;border:none;border-radius:8px;cursor:pointer;font-size:14px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .icon-btn.edit{background:var(--primary-light);color:var(--primary)}
+  .icon-btn.del{background:#fdeaea;color:var(--danger)}
+  .ocard-items{margin-top:8px;padding-left:2px}
+  .ocard-item-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--text)}
+  .ocard-item-row .it-sub{color:var(--muted);font-size:11.5px}
+  .ocard-total{display:flex;justify-content:space-between;margin-top:8px;font-size:14px;font-weight:700}
+  .ocard-total span:last-child{color:var(--primary-dark)}
 </style>
 </head>
 <body>
@@ -238,6 +306,92 @@
 
   <div id="toast" class="toast"></div>
 
+  <!-- Success Modal -->
+  <div id="successOverlay" class="modal-overlay">
+    <div class="modal-card">
+      <svg class="success-icon" viewBox="0 0 52 52">
+        <circle cx="26" cy="26" r="23"/>
+        <path d="M15 27l7 7 16-16"/>
+      </svg>
+      <div class="success-title">Pesanan Terkirim!</div>
+      <div class="success-sub">Pesanan kamu sudah tersimpan.</div>
+      <div class="success-summary">
+        <div class="success-row"><span>Nama</span><span id="sucNama">-</span></div>
+        <div class="success-row"><span>Jumlah Item</span><span id="sucItems">-</span></div>
+        <div class="success-row"><span>Total Bayar</span><span id="sucTotal">-</span></div>
+      </div>
+      <button class="btn-modal-close" onclick="closeSuccessModal()">Tutup</button>
+    </div>
+  </div>
+
+  <!-- Edit Order Modal -->
+  <div id="editOverlay" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-title">Edit Pesanan</div>
+
+      <label for="editNama">Nama Pemesan</label>
+      <input type="text" id="editNama" autocomplete="off">
+
+      <label>Item Pesanan</label>
+      <div id="editItemList"></div>
+
+      <div class="cond" style="margin-top:14px">
+        <label for="editJenis">Jenis Tahu</label>
+        <select id="editJenis">
+          <option value="Tahu Pentol" selected>Tahu Pentol</option>
+          <option value="Tahu Kanji">Tahu Kanji</option>
+        </select>
+
+        <label for="editHarga">Harga</label>
+        <select id="editHarga">
+          <option value="">— Pilih harga —</option>
+          <option value="2000">Rp 2.000</option>
+          <option value="5000">Rp 5.000</option>
+          <option value="10000">Rp 10.000</option>
+        </select>
+
+        <label>Pelengkap</label>
+        <div class="checks">
+          <label class="chk"><input type="checkbox" class="epl" value="Saos"> Saos</label>
+          <label class="chk"><input type="checkbox" class="epl" value="Kecap"> Kecap</label>
+          <label class="chk"><input type="checkbox" class="epl" id="eCSambal" value="Sambal"> Sambal</label>
+          <label class="chk"><input type="checkbox" class="epl" id="eCKuah" value="Kuah"> Kuah</label>
+        </div>
+
+        <div id="eSambalWrap" class="cond hidden">
+          <label for="eSambalSendok">Jumlah Sendok Sambal</label>
+          <select id="eSambalSendok">
+            <option value="1">1 sendok</option>
+            <option value="2">2 sendok</option>
+            <option value="3">3 sendok</option>
+            <option value="4">4 sendok</option>
+            <option value="5">5 sendok</option>
+          </select>
+        </div>
+
+        <div id="eKuahWrap" class="cond hidden">
+          <label for="eKuahJml">Banyak Kuah</label>
+          <select id="eKuahJml">
+            <option value="Banyak">Banyak</option>
+            <option value="Sedikit">Sedikit</option>
+          </select>
+        </div>
+
+        <button class="btn-add" onclick="addEditItem()">+ Tambah Item Baru</button>
+      </div>
+
+      <div class="total-row">
+        <span>Total</span>
+        <span id="editGrandTotal">Rp 0</span>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeEditModal()">Batal</button>
+        <button class="btn-save" onclick="saveEditOrder()">Simpan Perubahan</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Firebase SDK (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -286,6 +440,19 @@
   });
   document.getElementById('cKuah').addEventListener('change', function(){
     document.getElementById('kuahWrap').classList.toggle('hidden', !this.checked);
+  });
+
+  // --- Edit modal: checklist visual + conditional dropdowns ---
+  document.querySelectorAll('.epl').forEach(function(c){
+    c.addEventListener('change', function(){
+      this.closest('.chk').classList.toggle('on', this.checked);
+    });
+  });
+  document.getElementById('eCSambal').addEventListener('change', function(){
+    document.getElementById('eSambalWrap').classList.toggle('hidden', !this.checked);
+  });
+  document.getElementById('eCKuah').addEventListener('change', function(){
+    document.getElementById('eKuahWrap').classList.toggle('hidden', !this.checked);
   });
 
   function rupiah(n){ return 'Rp ' + (Number(n)||0).toLocaleString('id-ID'); }
@@ -371,9 +538,9 @@
         // DEBUG: success
         console.log("✓ Order saved to Firebase!");
         btn.disabled = false; btn.textContent = 'Kirim Pesanan';
+        showSuccessModal(order);
         cart = []; renderCart();
         document.getElementById('nama').value = '';
-        toast('Pesanan terkirim ✓');
       })
       .catch(function(err){
         // DEBUG: error
@@ -383,12 +550,36 @@
       });
   }
 
+  // --- Success modal ---
+  var successTimer;
+  function showSuccessModal(order){
+    document.getElementById('sucNama').textContent = order.nama;
+    document.getElementById('sucItems').textContent = order.items.length + ' item';
+    document.getElementById('sucTotal').textContent = rupiah(order.total);
+    var ov = document.getElementById('successOverlay');
+    // restart checkmark animation
+    var icon = ov.querySelector('.success-icon');
+    icon.outerHTML = icon.outerHTML;
+    ov.classList.add('show');
+    clearTimeout(successTimer);
+    successTimer = setTimeout(closeSuccessModal, 2500);
+  }
+  function closeSuccessModal(){
+    document.getElementById('successOverlay').classList.remove('show');
+    clearTimeout(successTimer);
+  }
+
   // --- Realtime report listener ---
   pesananRef.on('value', function(snap){
-    var val = snap.val() || {};
     // DEBUG: log data dari DB
-    console.log("📊 Data dari Firebase:", val);
-    ordersCache = Object.keys(val).map(function(k){ return val[k]; });
+    console.log("📊 Data dari Firebase:", snap.val());
+    var arr = [];
+    snap.forEach(function(child){
+      var o = child.val();
+      o.items = o.items ? (Array.isArray(o.items) ? o.items : Object.keys(o.items).map(function(k){return o.items[k];})) : [];
+      arr.push({ key: child.key, data: o });
+    });
+    ordersCache = arr;
     renderReport();
   }, function(err){
     // DEBUG: listener error
@@ -398,36 +589,148 @@
 
   function renderReport(){
     var body = document.getElementById('reportBody');
-    var flat = [];
-    ordersCache.forEach(function(o){
-      var items = o.items ? (Array.isArray(o.items) ? o.items : Object.keys(o.items).map(function(k){return o.items[k];})) : [];
-      items.forEach(function(it){
-        flat.push({ nama:o.nama, jenis:it.jenis, pelengkap:it.pelengkap, subtotal:it.subtotal, waktu:o.waktu });
-      });
-    });
 
-    if (flat.length === 0){
+    if (ordersCache.length === 0){
       body.innerHTML = '<div class="muted">Belum ada pesanan.</div>';
       document.getElementById('reportTotal').textContent = 'Rp 0';
       return;
     }
 
-    flat.sort(function(a,b){ return (b.waktu||0) - (a.waktu||0); });
+    var sorted = ordersCache.slice().sort(function(a,b){ return (b.data.waktu||0) - (a.data.waktu||0); });
 
-    var html = '', total = 0;
-    flat.forEach(function(r){
-      total += Number(r.subtotal) || 0;
-      html += '<div class="trow">'
-        +   '<div class="tcol-main">'
-        +     '<div class="tname">'+r.nama+'</div>'
-        +     '<div class="tmeta">'+r.jenis+(r.pelengkap ? ' · '+r.pelengkap : '')+'</div>'
-        +     '<div class="ttime">'+formatTime(r.waktu)+'</div>'
+    var html = '', grandTotal = 0;
+    sorted.forEach(function(entry){
+      var o = entry.data, key = entry.key;
+      grandTotal += Number(o.total) || 0;
+
+      var itemsHtml = '';
+      o.items.forEach(function(it){
+        itemsHtml += '<div class="ocard-item-row">'
+          +   '<span>'+it.jenis+(it.pelengkap ? ' <span class="it-sub">('+it.pelengkap+')</span>' : '')+'</span>'
+          +   '<span>'+rupiah(it.subtotal)+'</span>'
+          + '</div>';
+      });
+
+      html += '<div class="ocard">'
+        +   '<div class="ocard-head">'
+        +     '<div class="tcol-main">'
+        +       '<div class="tname">'+o.nama+'</div>'
+        +       '<div class="ttime">'+formatTime(o.waktu)+'</div>'
+        +     '</div>'
+        +     '<div class="ocard-actions">'
+        +       '<button class="icon-btn edit" onclick="openEditModal(\''+key+'\')" title="Edit">✏️</button>'
+        +       '<button class="icon-btn del" onclick="deleteOrder(\''+key+'\')" title="Hapus">🗑️</button>'
+        +     '</div>'
         +   '</div>'
-        +   '<div class="tprice">'+rupiah(r.subtotal)+'</div>'
+        +   '<div class="ocard-items">'+itemsHtml+'</div>'
+        +   '<div class="ocard-total"><span>Total</span><span>'+rupiah(o.total)+'</span></div>'
         + '</div>';
     });
     body.innerHTML = html;
-    document.getElementById('reportTotal').textContent = rupiah(total);
+    document.getElementById('reportTotal').textContent = rupiah(grandTotal);
+  }
+
+  // --- Delete order ---
+  function deleteOrder(key){
+    if (!window.confirm('Hapus pesanan ini? Tindakan tidak bisa dibatalkan.')) return;
+    pesananRef.child(key).remove()
+      .then(function(){
+        console.log("✓ Order removed:", key);
+        toast('Pesanan dihapus.');
+      })
+      .catch(function(err){
+        console.error("❌ Remove error:", err.code, err.message);
+        toast('Gagal hapus: ' + err.message);
+      });
+  }
+
+  // --- Edit order ---
+  var editCart = [];
+  var editKey = null;
+
+  function openEditModal(key){
+    var entry = ordersCache.find(function(e){ return e.key === key; });
+    if (!entry) return;
+    editKey = key;
+    editCart = entry.data.items.map(function(it){ return Object.assign({}, it); });
+    document.getElementById('editNama').value = entry.data.nama;
+    resetEditItemForm();
+    renderEditCart();
+    document.getElementById('editOverlay').classList.add('show');
+  }
+
+  function closeEditModal(){
+    document.getElementById('editOverlay').classList.remove('show');
+    editKey = null;
+    editCart = [];
+  }
+
+  function resetEditItemForm(){
+    document.getElementById('editJenis').value = 'Tahu Pentol';
+    document.getElementById('editHarga').value = '';
+    document.querySelectorAll('.epl').forEach(function(c){ c.checked=false; c.closest('.chk').classList.remove('on'); });
+    document.getElementById('eSambalWrap').classList.add('hidden');
+    document.getElementById('eKuahWrap').classList.add('hidden');
+  }
+
+  function addEditItem(){
+    var harga = document.getElementById('editHarga').value;
+    if (!harga){ toast('Pilih harga dulu.'); return; }
+    var jenis = document.getElementById('editJenis').value;
+
+    var pel = [];
+    document.querySelectorAll('.epl:checked').forEach(function(c){
+      var label = c.value;
+      if (label === 'Sambal') label = 'Sambal (' + document.getElementById('eSambalSendok').value + ' sdk)';
+      if (label === 'Kuah')   label = 'Kuah (' + document.getElementById('eKuahJml').value + ')';
+      pel.push(label);
+    });
+
+    editCart.push({ jenis:jenis, harga:Number(harga), pelengkap:pel.join(', '), subtotal:Number(harga) });
+    renderEditCart();
+    resetEditItemForm();
+  }
+
+  function removeEditItem(i){ editCart.splice(i,1); renderEditCart(); }
+
+  function renderEditCart(){
+    var list = document.getElementById('editItemList');
+    if (editCart.length === 0){
+      list.innerHTML = '<div class="cart-empty">Belum ada item.</div>';
+    } else {
+      var html = '';
+      editCart.forEach(function(it,i){
+        html += '<div class="edit-line">'
+          +   '<div class="line-info">'
+          +     '<div class="line-title">'+it.jenis+'</div>'
+          +     (it.pelengkap ? '<div class="line-sub">'+it.pelengkap+'</div>' : '')
+          +   '</div>'
+          +   '<div class="line-price">'+rupiah(it.subtotal)+'</div>'
+          +   '<button class="line-del" onclick="removeEditItem('+i+')">✕</button>'
+          + '</div>';
+      });
+      list.innerHTML = html;
+    }
+    var total = editCart.reduce(function(s,i){ return s+i.subtotal; }, 0);
+    document.getElementById('editGrandTotal').textContent = rupiah(total);
+  }
+
+  function saveEditOrder(){
+    var nama = document.getElementById('editNama').value.trim();
+    if (!nama){ toast('Isi nama dulu.'); return; }
+    if (editCart.length === 0){ toast('Minimal 1 item.'); return; }
+    var total = editCart.reduce(function(s,i){ return s+i.subtotal; }, 0);
+
+    pesananRef.child(editKey).update({ nama:nama, total:total, items:editCart })
+      .then(function(){
+        console.log("✓ Order updated:", editKey);
+        toast('Perubahan disimpan ✓');
+        closeEditModal();
+      })
+      .catch(function(err){
+        console.error("❌ Update error:", err.code, err.message);
+        toast('Gagal simpan: ' + err.message);
+      });
   }
 
   // --- Toast ---
